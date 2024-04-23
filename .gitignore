@@ -1,0 +1,6 @@
+data/*
+DLMA/wandb/
+DL_only/wandb/
+output/
+src/__pycache__/
+src/ml_only/__pycache__/

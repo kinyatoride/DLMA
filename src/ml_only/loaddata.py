@@ -1,0 +1,212 @@
+import numpy as np
+import pandas as pd
+import xarray as xr
+import torch
+from torch.utils.data import Dataset, DataLoader
+import warnings
+
+from utils import extract_month_and_to_yearly, shift_time, stack_ens_year
+
+class AnalogDataset(Dataset):
+    def __init__(self, 
+                 t0_ds: xr.Dataset, 
+                 t1_ds: xr.DataArray, 
+                ):
+        self.t0_ds = t0_ds.transpose('sample', 'lat', 'lon')
+        self.t1_ds = t1_ds.transpose('sample', 'lat', 'lon')
+        self.vnames = list(t0_ds.keys())
+        self.dims = self.t0_ds[self.vnames[0]].shape
+        
+    def __len__(self):
+        return self.dims[0]
+    
+    def __getitem__(self, idx):
+        
+        # Inidital condition
+        # Stack all variables
+        x = torch.from_numpy(
+            self.t0_ds.isel(sample=idx).to_array().data
+        )
+
+        # Target condition
+        y = torch.from_numpy(
+            self.t1_ds.isel(sample=idx).data
+        )
+        
+        return x, y
+
+def load_data(
+    data_dir, vnames, lat_slice, 
+    target_vname, target_grid, target_lat_slice, target_lon_slice,
+    lead, month, 
+):
+    """
+    Parameters
+    ----------
+    data_dir : str
+        Data directory
+    vnames : list of str
+        List of variable names
+    lat_slice : tuple 
+        Latitudinal bounds. e.g. (-60, 60)
+    target_vname : str
+        Target variable name
+    target_grid : str
+        Target grid resolution e.g. 2x2
+    target_lat_slice : tuple
+        Target latitudinal bounds
+    target_lon_slice : tuple
+        Target longitudinal bounds
+    lead : int
+        Forecast lead (months)
+    month : int
+        Initial month
+    
+    Returns
+    -------
+    t0_ds_month : xarray.Dataset (sample, lat, lon)
+        Initial states 
+    t1_ds_month : xarray.DataArray (sample, lat, lon)
+        Final states
+    """
+    # Read initial data
+    f_lst = [f'{data_dir}/{vname}_anomaly_5x5.nc' for vname in vnames]
+    t0_ds = xr.open_mfdataset(f_lst)
+    t0_ds = t0_ds.sel(lat=slice(*lat_slice))
+    
+    # Read final data
+    f = f'{data_dir}/{target_vname}_anomaly_{target_grid}.nc'
+    t1_ds = xr.open_dataarray(f)
+    t1_ds = t1_ds.sel(lat=slice(*target_lat_slice),
+                      lon=slice(*target_lon_slice))
+
+    # Shift the time of labels (t1 -> t0)
+    t1_ds = shift_time(t1_ds, lead)
+
+    # Select the month
+    t0_ds_month = extract_month_and_to_yearly(t0_ds, month)
+    t1_ds_month = extract_month_and_to_yearly(t1_ds, month)
+    
+    return t0_ds_month.compute(), t1_ds_month.compute()
+
+def load_cesm2_by_period(
+    data_dir, vnames, lat_slice, 
+    target_vname, target_grid, target_lat_slice, target_lon_slice,
+    lead, month, periods, 
+    batch_size, shuffle=True, **kwargs
+):
+    
+    t0_ds, t1_ds = load_data(
+        data_dir, vnames, lat_slice, 
+        target_vname, target_grid, target_lat_slice, target_lon_slice,
+        lead, month)
+    
+    # Grid area weight
+    t1_wgt = np.cos(np.deg2rad(t1_ds.lat))
+
+    # Remove grids with nan
+    t1_wgt = t1_wgt.where(t1_ds.isel(ens=0, year=0).notnull(), other=0)
+
+    # Normalize
+    t1_wgt /= t1_wgt.sum()
+
+    # To tensor
+    # t1_wgt = torch.from_numpy(t1_wgt.data)
+    t1_wgt = torch.from_numpy(t1_wgt.data.astype('float32'))
+    
+    datasets = {}
+    dataloaders = {}
+    for key, period in periods.items():
+        
+        # Split data, stack the ens and year dimensions to a sample dimension
+        t0_ds_sel = stack_ens_year(t0_ds, period)
+        t1_ds_sel = stack_ens_year(t1_ds, period)
+        
+        # Replace NaN with 0
+        t0_ds_sel = t0_ds_sel.fillna(0)
+        t1_ds_sel = t1_ds_sel.fillna(0)
+
+        # Land mask
+        # t1_mask = torch.from_numpy(t1_ds_sel.isel(sample=0).notnull().data)
+    
+        datasets[key] = AnalogDataset(t0_ds_sel, t1_ds_sel)
+        dataloaders[key] = DataLoader(datasets[key],
+                                      batch_size=batch_size,
+                                      shuffle=shuffle)
+
+    return datasets, dataloaders, t1_wgt
+
+def load_real(
+    data_dir, vnames, lat_slice, 
+    target_vname, target_grid, target_lat_slice, target_lon_slice,
+    t1_dist_f, lead, month, periods, 
+    batch_size, shuffle=False, **kwargs
+):
+    
+    t0_ds, t1_ds, t1_dist = load_data(
+        data_dir, vnames, lat_slice, 
+        target_vname, target_grid, target_lat_slice, target_lon_slice,
+        t1_dist_f, lead, month)
+        
+    # Select period, rename time to sample
+    t0_ds_sel = t0_ds.sel(year=slice(*periods['test'])).rename({'year': 'sample'})
+    t1_ds_sel = t1_ds.sel(year=slice(*periods['test'])).rename({'year': 'sample'})
+    t1_dist_sel = t1_dist.sel(
+        year=slice(*periods['test']), 
+        lyear=slice(*periods['train'])
+    ).stack(lsample=('lens', 'lyear')).rename({'year': 'sample'})
+    
+    # Replace NaN with 0
+    t0_mask = torch.from_numpy(t0_ds_sel.to_array().isel(sample=0).isnull().data)
+    t0_ds_sel = t0_ds_sel.fillna(0)
+
+    dataset = AnalogDataset(t0_ds_sel, t1_ds_sel, t1_dist_sel)
+    dataloader = DataLoader(dataset,
+                            batch_size=batch_size,
+                            shuffle=shuffle)
+
+    return dataset, dataloader, t0_mask
+
+def load_cesm2_by_ens(
+    data_dir, vnames, lat_slice, 
+    t1_dist_f, lead, month, ens_dict, 
+    batch_size, shuffle=True
+):
+    
+    t0_ds, t1_ds, t1_dist = load_data(
+        data_dir, vnames, lat_slice, t1_dist_f, 
+        lead, month, sample_dim=['ens', 'year'])
+
+    # Select syear to eyear-2
+    syear = t0_ds.year.data[0]
+    eyear = t0_ds.year.data[-3]
+    t0_ds = t0_ds.sel(year=slice(syear, eyear))
+    t1_ds = t1_ds.sel(year=slice(syear, eyear))
+    t1_dist = t1_dist.sel(year=slice(syear, eyear), lyear=slice(syear, eyear))
+    
+    datasets = {}
+    dataloaders = {}
+    for key, ens in ens_dict.items():
+        
+        # Split data, stack the ens and year dimensions to a sample dimension
+        t0_ds_sel = t0_ds.sel(ens=ens).stack(sample=('ens', 'year')).transpose('sample', ...)
+        t1_ds_sel = t1_ds.sel(ens=ens).stack(sample=('ens', 'year')).transpose('sample', ...)
+        t1_dist_sel = t1_dist.sel(
+            ens=ens, lens=ens_dict['train']
+        ).stack(sample=('ens', 'year'), lsample=('lens', 'lyear'))
+        
+        # Replace NaN with 0
+        t0_mask = torch.from_numpy(t0_ds_sel.to_array().isel(sample=0).isnull().data)
+        t0_ds_sel = t0_ds_sel.fillna(0)
+        
+        # Create the library in tensor
+        if key == 'train':
+            t0_library = torch.from_numpy(t0_ds_sel.to_array().transpose('sample', ...).data)
+            t1_library = torch.from_numpy(t1_ds_sel.transpose('sample', ...).data)
+    
+        datasets[key] = AnalogDataset(t0_ds_sel, t1_ds_sel, t1_dist_sel)
+        dataloaders[key] = DataLoader(datasets[key],
+                                      batch_size=batch_size,
+                                      shuffle=shuffle)
+
+    return datasets, dataloaders, t0_library, t0_mask, t1_library

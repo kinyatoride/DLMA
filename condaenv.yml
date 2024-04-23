@@ -1,0 +1,19 @@
+name: dlma
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - jupyter
+  - numpy
+  - pandas
+  - scipy
+  - dask
+  - xarray
+  - netcdf4
+  - pytorch
+  - torchvision
+  - cudatoolkit
+  - torchinfo
+  - optuna
+  - wandb

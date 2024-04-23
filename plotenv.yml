@@ -1,0 +1,16 @@
+name: dlma_plot
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - jupyter
+  - numpy
+  - pandas
+  - scipy
+  - dask
+  - xarray
+  - netcdf4
+  - matplotlib=3.4.3
+  - cartopy=0.20
+  - proplot

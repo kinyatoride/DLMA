@@ -66,7 +66,7 @@ Navigate to the `MA` directory for the traditional model-analog forecasting.
 Navigate to the `DL_only` directory for the deep learning only approach.
 
 1. `1_train.ipynb`: Train the ML only model
-2.  `2-1_test.ipynb`, `2-2_eval_stat.ipynb`: Test the ML only model
+2.  `2_test.ipynb`: Test the ML only model
 
 ## Plot
 Navigate to the `plot` directory and use the plotting environment.

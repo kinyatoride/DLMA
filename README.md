@@ -2,7 +2,7 @@
 
 A skillful and interpretable seasonal forecasting approach by combining deep learning and model-analog forecasting. U-Net is used to find important areas for identifying analog members.
 
-This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity of ENSO Forecasts" by Toride et al. A preprint is available at [Link to Preprint].
+This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity of ENSO Forecasts" by Toride et al. A preprint is available at https://arxiv.org/abs/2404.15419.
 
 ![overview](images/figure1.png)
 
@@ -18,7 +18,7 @@ conda env create -f plotenv.yml
 ```  
 
 ## Data
-Download the required data and place it in the `data` directory. The data can be found at doi: [10.5281/zenodo.11048404](https://doi.org/10.5281/zenodo.11048404).
+Download the required data and place it in the `data` directory. The data can be found at https://doi.org/10.5281/zenodo.11048404.
 
 The `data/cesm2` directory contains the Community Earth System Model Version 2 Large Ensemble ([CESM2-LE](https://doi.org/10.26024/kgmp-c556)), while the `data/real` directory contains the Ocean Reanalysis System 5 ([ORAS5](https://doi.org/10.24381/cds.67e8eeb7)) datasets. These datasets have been processed to provide detrended monthly anomalies and have been interpolated to two different resolutions: 2° × 2° and 5° × 5°. The 5°×5° files are used as input, while the 2°×2° files are used for analog forecasting.
 ```

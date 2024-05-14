@@ -2,7 +2,7 @@
 
 A skillful and interpretable seasonal forecasting approach by combining deep learning and model-analog forecasting. U-Net is used to find important areas for identifying analog members.
 
-This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity of ENSO Forecasts" by Toride et al. A preprint is available at https://arxiv.org/abs/2404.15419.
+This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity for Interpretable ENSO Forecasts" by Toride et al. A preprint is available at https://arxiv.org/abs/2404.15419.
 
 ![overview](images/figure1.png)
 

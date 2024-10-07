@@ -53,6 +53,9 @@ Navigate to the `DLMA` directory to find the `.ipynb` files for running the mode
     - `3-1_test.ipynb`: Test the model using reanalysis dataset
     - `3-2_eval_stat.ipynb`: Evaluate forecast skill using reanalysis dataset
 
+### Architecture
+![architecture](images/figure2.png)
+
 ## Usage of MA and DL_only
 For comparison, the traditional model-analog forecasting method is provided in the `MA` directory. In addition, an equivalent deep learning only approach is provided in the `DL_only` directory.
 
@@ -77,10 +80,10 @@ Navigate to the `plot` directory and use the plotting environment.
 ## Results
 
 ### Forecast skill comparison
-![skill](images/figure2.png)
+![skill](images/figure3.png)
 
 ### Improvements in extreme events
-![extreme](images/figure3.png)
+![extreme](images/figure4.png)
 
 ### Interpretable weights
-![weight](images/figure4.png)
+![weight](images/figure5.png)

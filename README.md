@@ -1,10 +1,26 @@
 # Deep Learning Model-Analog (DLMA)
 
-A skillful and interpretable seasonal forecasting approach by combining deep learning and model-analog forecasting. U-Net is used to find important areas for identifying analog members.
+A skillful and interpretable seasonal forecasting approach by combining deep learning and model-analog forecasting. 
+This technique, called **optimized model-analog**, leverages U-Net to identify important areas for selecting analog members.
 
 This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity for Interpretable ENSO Forecasts" by Toride et al. A preprint is available at https://arxiv.org/abs/2404.15419.
 
+## Concept
+The figure below illustrates the concept of this approach. 
+Subpanel (a) shows a sample condition we aim to forecast. 
+In subpanel (b), without the use of machine learning, some analogs may evolve into the opposite phase of ENSO. 
+Subpanel (c) demonstrates that with this approach, the ensemble forecasts of the El Niño event are significantly improved.
+
 ![overview](images/figure1.png)
+
+## Architecture
+The U-Net predicts weights for the corresponding input variables. These weights highlight sensitive (important) regions for target growth. 
+The predicted weights determine the weighted initial distances for every sample within the library. 
+The top 2% of samples (dark blue circles) are then used to calculate the loss function. 
+This loss function updates the U-Net parameters so that samples with smaller forecast errors 
+have smaller weighted initial distances (indicated by dark blue arrows in the scatter plot).
+
+![architecture](images/figure2.png)
 
 ## Installation
 To set up the environment, run the following command:  
@@ -52,9 +68,6 @@ Navigate to the `DLMA` directory to find the `.ipynb` files for running the mode
 3. Test using a reanalysis dataset
     - `3-1_test.ipynb`: Test the model using reanalysis dataset
     - `3-2_eval_stat.ipynb`: Evaluate forecast skill using reanalysis dataset
-
-### Architecture
-![architecture](images/figure2.png)
 
 ## Usage of MA and DL_only
 For comparison, the traditional model-analog forecasting method is provided in the `MA` directory. In addition, an equivalent deep learning only approach is provided in the `DL_only` directory.

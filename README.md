@@ -3,7 +3,8 @@
 A skillful and interpretable seasonal forecasting approach by combining deep learning and model-analog forecasting. 
 This technique, called **optimized model-analog**, leverages U-Net to identify important areas for selecting analog members.
 
-This repository contains the code for the paper titled "Using Deep Learning to Identify Initial Error Sensitivity for Interpretable ENSO Forecasts" by Toride et al. A preprint is available at https://arxiv.org/abs/2404.15419.
+This repository contains the code for the paper:
+Toride, K., M. Newman, A. Hoell, A. Capotondi, J. Schlör, D. J. Amaya (2025), Using Deep Learning to Identify Initial Error Sensitivity for Interpretable ENSO Forecasts, Artificial Intelligence for the Earth Systems, 4, doi: [10.1175/AIES-D-24-0045.1](https://doi.org/10.1175/AIES-D-24-0045.1)
 
 ## Concept
 The figure below illustrates the concept of this approach. 
